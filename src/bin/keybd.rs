@@ -1,10 +1,11 @@
-use std::time::{self, Duration, Instant};
+// use std::time::{self, Duration, Instant};
+// use windows::Win32::UI::WindowsAndMessaging::UnhookWindowsHookEx;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageA, KBDLLHOOKSTRUCT, LLKHF_ALTDOWN, LLKHF_EXTENDED,
     LLKHF_INJECTED, LLKHF_LOWER_IL_INJECTED, LLKHF_UP, MSG, PM_REMOVE, PeekMessageA,
-    SetWindowsHookExA, TranslateMessage, UnhookWindowsHookEx, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP,
-    WM_SYSKEYDOWN, WM_SYSKEYUP,
+    SetWindowsHookExA, TranslateMessage, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN,
+    WM_SYSKEYUP,
 };
 
 // This is a "LowLevelKeyboardProc"
@@ -66,7 +67,7 @@ unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) 
 }
 
 pub fn main() {
-    let kb_hhk = {
+    let _kb_hhk = {
         let idhook = WH_KEYBOARD_LL;
         let lpfn = Some(kb_hookfn as unsafe extern "system" fn(i32, WPARAM, LPARAM) -> LRESULT);
         let hmod = None;
@@ -82,7 +83,11 @@ pub fn main() {
         }
     };
 
+    println!();
     println!("Displaying key events. Press CTRL+C to exit.");
+    println!("Warning: these key presses are not suppressed.");
+    println!("So, don't test this while the terminal is the active window.");
+    println!("Otherwise, everything you type will show up when you exit the program.");
     println!();
     println!("       Message │  VK  │ Scan │   Time (s)  │ Flags");
     println!("───────────────┼──────┼──────┼─────────────┼─────────────────────────────────────");

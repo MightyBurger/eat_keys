@@ -1,10 +1,11 @@
-use std::time::{self, Duration, Instant};
+// use std::time::{self, Duration, Instant};
+// use windows::Win32::UI::WindowsAndMessaging::UnhookWindowsHookEx;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageA, LLMHF_INJECTED, LLMHF_LOWER_IL_INJECTED, MSG, MSLLHOOKSTRUCT,
-    PM_REMOVE, PeekMessageA, SetWindowsHookExA, TranslateMessage, UnhookWindowsHookEx, WH_MOUSE_LL,
-    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL,
-    WM_RBUTTONDOWN, WM_RBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
+    PM_REMOVE, PeekMessageA, SetWindowsHookExA, TranslateMessage, WH_MOUSE_LL, WM_LBUTTONDOWN,
+    WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN,
+    WM_RBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
 };
 
 // This is a "LowLevelMouseProc"
@@ -70,7 +71,7 @@ unsafe extern "system" fn mouse_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARA
 }
 
 pub fn main() {
-    let mouse_hhk = {
+    let _mouse_hhk = {
         let idhook = WH_MOUSE_LL;
         let lpfn = Some(mouse_hookfn as unsafe extern "system" fn(i32, WPARAM, LPARAM) -> LRESULT);
         let hmod = None;
@@ -86,6 +87,7 @@ pub fn main() {
         }
     };
 
+    println!();
     println!("Displaying mouse events. Press CTRL+C to exit.");
     println!();
     println!("       Message │  MouseData │   Time (s)  │ Flags");
