@@ -56,13 +56,13 @@ unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) 
 
     println!();
 
-    // Return the keypress
-    // unsafe {
-    //     return CallNextHookEx(None, nCode, wParam, lParam);
-    // }
+    // Return the button press
+    unsafe {
+        return CallNextHookEx(None, nCode, wParam, lParam);
+    }
 
-    // Eat the keypress
-    return LRESULT(1);
+    // Eat the button press
+    // return LRESULT(1);
 }
 
 pub fn main() {
@@ -82,15 +82,11 @@ pub fn main() {
         }
     };
 
-    println!("Eating and displaying key events for ten seconds.");
+    println!("Displaying key events. Press CTRL+C to exit.");
     println!();
     println!("       Message │  VK  │ Scan │   Time (s)  │ Flags");
     println!("───────────────┼──────┼──────┼─────────────┼─────────────────────────────────────");
-
-    let start_time = Instant::now();
-    let block_time = Duration::from_millis(10000);
-
-    while Instant::now() < start_time + block_time {
+    loop {
         let mut lpmsg = MSG::default();
         unsafe {
             if PeekMessageA(&mut lpmsg, None, 0, 0, PM_REMOVE).as_bool() {
@@ -100,11 +96,24 @@ pub fn main() {
         }
     }
 
-    unsafe {
-        match UnhookWindowsHookEx(kb_hhk) {
-            Ok(()) => (),
-            Err(e) => println!("Error unhooking: {e}"),
-        }
-    }
-    println!("Done.");
+    // let start_time = Instant::now();
+    // let block_time = Duration::from_millis(10000);
+
+    // while Instant::now() < start_time + block_time {
+    //     let mut lpmsg = MSG::default();
+    //     unsafe {
+    //         if PeekMessageA(&mut lpmsg, None, 0, 0, PM_REMOVE).as_bool() {
+    //             let _ = TranslateMessage(&lpmsg);
+    //             let _ = DispatchMessageA(&lpmsg);
+    //         }
+    //     }
+    // }
+
+    // unsafe {
+    //     match UnhookWindowsHookEx(kb_hhk) {
+    //         Ok(()) => (),
+    //         Err(e) => println!("Error unhooking: {e}"),
+    //     }
+    // }
+    // println!("Done.");
 }

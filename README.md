@@ -4,9 +4,11 @@ Nom!
 
 There's two programs here.
 
-`cargo run --bin keybd` - Run to display keyboard key presses for ten seconds.
+`cargo run --bin keybd` - Run to display keyboard key presses.
 
-`cargo run --bin mouse` - Run to display mouse button presses for ten seconds.
+`cargo run --bin mouse` - Run to display mouse button presses.
+
+It will run until you stop it with CTRL+C.
 
 The purpose of these programs are to help with debugging a remap tool for Ori speedruns.
 
