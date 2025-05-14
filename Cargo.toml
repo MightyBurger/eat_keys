@@ -1,0 +1,10 @@
+[package]
+name = "eat_keys"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+windows = { version = "0.61.1", features = [
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
