@@ -66,42 +66,45 @@ unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) 
 }
 
 pub fn main() {
-    let idhook = WH_KEYBOARD_LL;
-    let lpfn = Some(kb_hookfn as unsafe extern "system" fn(i32, WPARAM, LPARAM) -> LRESULT);
-    let hmod = None;
-    let dwthreadid = 0;
-
-    unsafe {
-        let hhk = match SetWindowsHookExA(idhook, lpfn, hmod, dwthreadid) {
-            Ok(hhk) => hhk,
-            Err(e) => {
-                println!("Error hooking: {e}");
-                return;
+    let kb_hhk = {
+        let idhook = WH_KEYBOARD_LL;
+        let lpfn = Some(kb_hookfn as unsafe extern "system" fn(i32, WPARAM, LPARAM) -> LRESULT);
+        let hmod = None;
+        let dwthreadid = 0;
+        unsafe {
+            match SetWindowsHookExA(idhook, lpfn, hmod, dwthreadid) {
+                Ok(hhk) => hhk,
+                Err(e) => {
+                    println!("Error hooking: {e}");
+                    return;
+                }
             }
-        };
-        println!("Eating and displaying keys for 5 seconds.");
-        println!();
-        println!("       Message │  VK  │ Scan │   Time (s)  │ Flags");
-        println!(
-            "───────────────┼──────┼──────┼─────────────┼─────────────────────────────────────"
-        );
+        }
+    };
 
-        let start_time = Instant::now();
-        let block_time = Duration::from_millis(5000);
+    println!("Eating and displaying key events for ten seconds.");
+    println!();
+    println!("       Message │  VK  │ Scan │   Time (s)  │ Flags");
+    println!("───────────────┼──────┼──────┼─────────────┼─────────────────────────────────────");
 
-        while Instant::now() < start_time + block_time {
-            let mut lpmsg = MSG::default();
+    let start_time = Instant::now();
+    let block_time = Duration::from_millis(10000);
+
+    while Instant::now() < start_time + block_time {
+        let mut lpmsg = MSG::default();
+        unsafe {
             if PeekMessageA(&mut lpmsg, None, 0, 0, PM_REMOVE).as_bool() {
                 let _ = TranslateMessage(&lpmsg);
                 let _ = DispatchMessageA(&lpmsg);
             }
-            std::thread::sleep(time::Duration::from_millis(10));
         }
+    }
 
-        match UnhookWindowsHookEx(hhk) {
+    unsafe {
+        match UnhookWindowsHookEx(kb_hhk) {
             Ok(()) => (),
             Err(e) => println!("Error unhooking: {e}"),
         }
-        println!("Done.");
     }
+    println!("Done.");
 }
