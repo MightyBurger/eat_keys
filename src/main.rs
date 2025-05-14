@@ -1,33 +1,73 @@
 use std::time::{self, Duration, Instant};
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageA, MSG, PM_REMOVE, PeekMessageA, SetWindowsHookExA,
-    TranslateMessage, UnhookWindowsHookEx, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN,
-    WM_SYSKEYUP,
+    CallNextHookEx, DispatchMessageA, KBDLLHOOKSTRUCT, LLKHF_ALTDOWN, LLKHF_EXTENDED,
+    LLKHF_INJECTED, LLKHF_LOWER_IL_INJECTED, LLKHF_UP, MSG, PM_REMOVE, PeekMessageA,
+    SetWindowsHookExA, TranslateMessage, UnhookWindowsHookEx, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP,
+    WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
+// This is a "LowLevelKeyboardProc"
+// https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelkeyboardproc
+
 #[allow(non_snake_case)]
-unsafe extern "system" fn hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
-    let t = Instant::now();
-    match wParam.0 as u32 {
-        WM_KEYDOWN => println!("WM_KEYDOWN    {:?}", t),
-        WM_KEYUP => println!("WM_KEYUP      {:?}", t),
-        WM_SYSKEYDOWN => println!("WM_SYSKEYDOWN {:?}", t),
-        WM_SYSKEYUP => println!("WM_SYSKEYUP   {:?}", t),
-        other => println!("Unrecognized keyboard message: {:?}", other),
-    }
+unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
+    // Windows API: If nCode is less than zero, the hook procedure must pass the message
+    // to the CallNextHookEx function without further processing and should return the value
+    // returned by CallNextHookEx.
     if nCode < 0 {
         unsafe {
             return CallNextHookEx(None, nCode, wParam, lParam);
         }
-    } else {
-        return LRESULT(1);
+    }
+
+    let message = match wParam.0 as u32 {
+        WM_KEYDOWN => "WM_KEYDOWN",
+        WM_KEYUP => "WM_KEYUP",
+        WM_SYSKEYDOWN => "WM_SYSKEYDOWN",
+        WM_SYSKEYUP => "WM_SYSKEYUP",
+        _ => "Unrecognized keyboard message",
     };
+
+    let hookstruct: KBDLLHOOKSTRUCT = unsafe { *(lParam.0 as *const KBDLLHOOKSTRUCT) };
+    let vk_code = hookstruct.vkCode;
+    let scan_code = hookstruct.scanCode;
+    let time_seconds: f64 = hookstruct.time as f64 / 1000.0;
+
+    let flags = hookstruct.flags;
+
+    print!("{message:>14} │ 0x{vk_code:02x} │ 0x{scan_code:02x} │ {time_seconds:>11.3} │");
+
+    if flags.contains(LLKHF_EXTENDED) {
+        print!(" LLKHF_EXTENDED");
+    }
+    if flags.contains(LLKHF_LOWER_IL_INJECTED) {
+        print!(" LLKHF_LOWER_IL_INJECTED");
+    }
+    if flags.contains(LLKHF_INJECTED) {
+        print!(" LLHKF_INJECTED");
+    }
+    if flags.contains(LLKHF_ALTDOWN) {
+        print!(" LLHKF_ALTDOWN");
+    }
+    if flags.contains(LLKHF_UP) {
+        print!(" LLKHF_UP");
+    }
+
+    println!();
+
+    // Return the keypress
+    // unsafe {
+    //     return CallNextHookEx(None, nCode, wParam, lParam);
+    // }
+
+    // Eat the keypress
+    return LRESULT(1);
 }
 
 pub fn main() {
     let idhook = WH_KEYBOARD_LL;
-    let lpfn = Some(hookfn as unsafe extern "system" fn(i32, WPARAM, LPARAM) -> LRESULT);
+    let lpfn = Some(kb_hookfn as unsafe extern "system" fn(i32, WPARAM, LPARAM) -> LRESULT);
     let hmod = None;
     let dwthreadid = 0;
 
@@ -40,6 +80,11 @@ pub fn main() {
             }
         };
         println!("Eating and displaying keys for 5 seconds.");
+        println!();
+        println!("       Message │  VK  │ Scan │   Time (s)  │ Flags");
+        println!(
+            "───────────────┼──────┼──────┼─────────────┼─────────────────────────────────────"
+        );
 
         let start_time = Instant::now();
         let block_time = Duration::from_millis(5000);
