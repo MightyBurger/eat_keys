@@ -2,10 +2,9 @@
 // use windows::Win32::UI::WindowsAndMessaging::UnhookWindowsHookEx;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageA, KBDLLHOOKSTRUCT, LLKHF_ALTDOWN, LLKHF_EXTENDED,
-    LLKHF_INJECTED, LLKHF_LOWER_IL_INJECTED, LLKHF_UP, MSG, PM_REMOVE, PeekMessageA,
-    SetWindowsHookExA, TranslateMessage, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN,
-    WM_SYSKEYUP,
+    CallNextHookEx, DispatchMessageA, GetMessageA, KBDLLHOOKSTRUCT, LLKHF_ALTDOWN, LLKHF_EXTENDED,
+    LLKHF_INJECTED, LLKHF_LOWER_IL_INJECTED, LLKHF_UP, MSG, SetWindowsHookExA, TranslateMessage,
+    WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
 // This is a "LowLevelKeyboardProc"
@@ -13,6 +12,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
+    static mut LAST_TIME: Option<u32> = None;
+
     // Windows API: If nCode is less than zero, the hook procedure must pass the message
     // to the CallNextHookEx function without further processing and should return the value
     // returned by CallNextHookEx.
@@ -34,10 +35,21 @@ unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) 
     let vk_code = hookstruct.vkCode;
     let scan_code = hookstruct.scanCode;
     let time_seconds: f64 = hookstruct.time as f64 / 1000.0;
+    let delta = unsafe {
+        match LAST_TIME {
+            Some(t_ms) => Some((hookstruct.time - t_ms) as f64 / 1000.0),
+            None => None,
+        }
+    };
 
     let flags = hookstruct.flags;
 
     print!("{message:>14} │ 0x{vk_code:02x} │ 0x{scan_code:02x} │ {time_seconds:>11.3} │");
+
+    match delta {
+        Some(t) => print!("{t:>11.3} │"),
+        None => print!("     (none) │"),
+    }
 
     if flags.contains(LLKHF_EXTENDED) {
         print!(" LLKHF_EXTENDED");
@@ -56,6 +68,10 @@ unsafe extern "system" fn kb_hookfn(nCode: i32, wParam: WPARAM, lParam: LPARAM) 
     }
 
     println!();
+
+    unsafe {
+        LAST_TIME = Some(hookstruct.time);
+    }
 
     // Return the button press
     unsafe {
@@ -89,15 +105,21 @@ pub fn main() {
     println!("So, don't test this while the terminal is the active window.");
     println!("Otherwise, everything you type will show up when you exit the program.");
     println!();
-    println!("       Message │  VK  │ Scan │   Time (s)  │ Flags");
-    println!("───────────────┼──────┼──────┼─────────────┼─────────────────────────────────────");
+    println!("       Message │  VK  │ Scan │   Time (s)  │  Delta (s) │ Flags");
+    println!(
+        "───────────────┼──────┼──────┼─────────────┼────────────┼─────────────────────────────────────"
+    );
     loop {
         let mut lpmsg = MSG::default();
         unsafe {
-            if PeekMessageA(&mut lpmsg, None, 0, 0, PM_REMOVE).as_bool() {
+            if GetMessageA(&mut lpmsg, None, 0, 0).as_bool() {
                 let _ = TranslateMessage(&lpmsg);
                 let _ = DispatchMessageA(&lpmsg);
             }
+            // if PeekMessageA(&mut lpmsg, None, 0, 0, PM_REMOVE).as_bool() {
+            //     let _ = TranslateMessage(&lpmsg);
+            //     let _ = DispatchMessageA(&lpmsg);
+            // }
         }
     }
 

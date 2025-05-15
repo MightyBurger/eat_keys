@@ -2,10 +2,10 @@
 // use windows::Win32::UI::WindowsAndMessaging::UnhookWindowsHookEx;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageA, LLMHF_INJECTED, LLMHF_LOWER_IL_INJECTED, MSG, MSLLHOOKSTRUCT,
-    PM_REMOVE, PeekMessageA, SetWindowsHookExA, TranslateMessage, WH_MOUSE_LL, WM_LBUTTONDOWN,
-    WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN,
-    WM_RBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
+    CallNextHookEx, DispatchMessageA, GetMessageA, LLMHF_INJECTED, LLMHF_LOWER_IL_INJECTED, MSG,
+    MSLLHOOKSTRUCT, SetWindowsHookExA, TranslateMessage, WH_MOUSE_LL, WM_LBUTTONDOWN, WM_LBUTTONUP,
+    WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP,
+    WM_XBUTTONDOWN, WM_XBUTTONUP,
 };
 
 // This is a "LowLevelMouseProc"
@@ -96,7 +96,7 @@ pub fn main() {
     loop {
         let mut lpmsg = MSG::default();
         unsafe {
-            if PeekMessageA(&mut lpmsg, None, 0, 0, PM_REMOVE).as_bool() {
+            if GetMessageA(&mut lpmsg, None, 0, 0).as_bool() {
                 let _ = TranslateMessage(&lpmsg);
                 let _ = DispatchMessageA(&lpmsg);
             }
